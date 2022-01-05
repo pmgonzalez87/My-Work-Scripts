@@ -1,0 +1,34 @@
+---
+# Set up db servers on db1 anad db2
+#Playbook - hosts, tasks, 
+- hosts: db
+  become: yes #use sudo
+  tasks:
+    - name: Installing DB Server #whatever text
+      yum:
+        name: mariadb
+        state: latest
+        update_cache: yes
+      notify: restart-mariadb-server
+
+    - name: Start the mariadb service
+      service: 
+        name: mariadb 
+        state: started
+        enabled: yes
+    
+    - name: Configure firewall
+      firewalld:
+        service: http
+        #port: 80/tcp
+        permanent: true
+        state: enabled
+        immediate: yes
+
+  handlers:
+    - name: restart-mariadb
+      service:
+        name: mariadb
+        state: restarted
+
+        

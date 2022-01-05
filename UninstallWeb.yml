@@ -1,0 +1,19 @@
+---
+# Uninstall set up from web servers on web1 anad web2
+#Playbook - hosts, tasks, 
+- hosts: web
+  become: yes #use sudo
+  tasks:
+    - name: Uninstalling Web Server #whatever text
+      yum:
+        name: httpd
+        state: absent
+      notify: restart-httpd
+
+  handlers:
+    - name: restart-httpd
+      service:
+        name: httpd
+        state: restarted
+
+        

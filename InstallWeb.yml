@@ -1,0 +1,44 @@
+---
+# Set up web servers on web1 anad web2
+#Playbook - hosts, tasks, 
+- hosts: web
+  become: yes #use sudo
+  tasks:
+    - name: Installing Web Server #whatever text
+      yum:
+        name: httpd
+        state: latest
+      notify: restart-httpd
+
+    - name: Start the httpd service
+      service: 
+        name: httpd 
+        state: started
+        enabled: yes
+    
+    - name: Configure firewall
+      firewalld:
+        service: http
+        #port: 80/tcp
+        permanent: true
+        state: enabled
+        immediate: yes
+
+    - name: Create target directory
+      file:
+        path: /var/www/html
+        state: directory
+        mode: 0755
+
+    - name: Copy custom web files to web servers
+      copy: # copy from downloads to path above
+        src: ~/Downloads/parallo/
+        dest: /var/www/html/
+
+  handlers:
+    - name: restart-httpd
+      service:
+        name: httpd
+        state: restarted
+
+        

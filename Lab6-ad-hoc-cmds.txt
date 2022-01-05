@@ -1,0 +1,64 @@
+#START AND ENABLE SSHD ON ALL SERVERS:
+sudo systemctl enable sshd
+sudo systemctl start sshd
+# =================================================
+#CHECK SERVICE STATUS of SSHD
+ansible -i inventory all -a "service sshd status warn=false"
+====================================================
+# If you haven't done so already ...
+# CREATE A SSH KEY PAIR FOR justincase on the Ansible VM...
+
+ssh-key-gen -t rsa
+
+# AND from the Ansible VM, COPY this PUB KEY TO ALL SERVERS
+#  (IGNORE THESE IF YOU HAVE ALREADY DONE THIS)
+ssh-copy-id justincase@192.168.0.111 (type Password01 when asked for password)
+ssh-copy-id justincase@192.168.0.112 (type Password01 when asked for password)
+ssh-copy-id justincase@192.168.0.121 (type Password01 when asked for password)
+ssh-copy-id justincase@192.168.0.122 (type Password01 when asked for password)
+# ==================================================
+# On the WEB and DB servers:
+#   Create a user named egoad with a password of RubberDuck!
+----
+ansible -i all
+ inventory -m user -a "name=egoad createhome=yes \
+    password={{'RubberDuck!' | password_hash('sha512')}} \
+    comment='Ed Goad' generate_ssh_key=yes shell=/bin/bash" -b -K
+----
+# On the WEB servers:
+#    Install Apache (httpd)
+#    Start Apache
+#    Configure Apache to auto-start at system boot
+----
+ansible -i inventory web -m yum -a "name=httpd state=installed" -b -K
+ansible -i inventory web -m service -a "name=httpd state=started enabled=yes"
+#==============
+# Check if httpd is running:
+----
+ansible -i inventory web -a "service sshd status warn=false"
+#====================================================================
+# Enable local ansible node firewall to allow http traffic thru
+sudo firewall-cmd --add-service=http --permanent
+sudo firewall-cmd --reload
+#====================================================================
+# On the DB servers:
+#    Install MariaDB or MySQL
+#    Start the DB service
+#    Configure the DB service to auto-start at system boot
+----
+ansible -i inventory db -m dnf -a \
+	"name=mariadb-server state=latest update_cache=yes" -b -K
+ansible -i inventory db -m service -a \
+	"name=mariadb state=started enabled=yes" -b -K
+#===================================================================
+# Check if httpd is running:
+----
+ansible -i inventory db -a "service mariadb status warn=false"
+ansible -i inventory db -m shell -a "systemctl mariadb status" -b -K
+# MAKE SURE FIREWALL ALLOWS http TRAFFIC
+------
+ansible -i inventory web -m shell -a \
+	'firewall-cmd --add-service=http --permanent' -b -K
+ansible -i inventory web -m shell -a 'firewall-cmd --reload' -b -K
+ansible -i inventory web -m shell -a 'firewall-cmd --list-all' -b -K
+# ===================================================================

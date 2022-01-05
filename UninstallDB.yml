@@ -1,0 +1,20 @@
+---
+# Uninstall set up from db servers on db1 and db2
+#Playbook - hosts, tasks, 
+- hosts: db
+  become: yes #use sudo
+  tasks:
+    - name: Uninstalling DB Server #whatever text
+      yum:
+        name: mariadb
+        state: absent
+        update_cache: yes
+      notify: restart-mariadb
+
+  handlers:
+    - name: restart-mariadb
+      service:
+        name: mariadb
+        state: restarted
+
+        
